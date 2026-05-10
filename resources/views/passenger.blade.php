@@ -93,6 +93,9 @@
 
         .driver-name { color: #f8fafc; font-weight: 700; font-size: 14px; margin-bottom: 2px; }
         .driver-jeep { color: #94a3b8; font-size: 11px; font-weight: 600; }
+        
+        /* New Speed Styling */
+        .driver-speed { color: #16a34a; font-size: 11px; font-weight: 800; }
 
         .shuttle-label {
             background: #1e293b;
@@ -145,7 +148,6 @@
             <div id="drivers-list"></div>
             
             <div class="mt-4 space-y-2">
-                <!-- Location Focus Button -->
                 <button onclick="focusOnStudent()" class="flex items-center justify-center gap-2 w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold uppercase tracking-wider rounded-lg transition-all shadow-lg">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -154,7 +156,6 @@
                     My Location
                 </button>
 
-                <!-- Reset View Button -->
                 <button onclick="resetMapView()" class="w-full py-2 text-[10px] text-gray-400 font-bold uppercase tracking-widest border border-gray-700 rounded-lg hover:bg-gray-800 transition-all">
                     Reset View
                 </button>
@@ -167,7 +168,6 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // Initial Map Setup
         const defaultView = [18.1754, 120.5390];
         const map = L.map('map', { zoomControl: false }).setView(defaultView, 15);
         
@@ -176,13 +176,12 @@
 
         let shuttleMarkers = {};
         let activeShuttlesData = {}; 
-        let userLatLng = null; // Store user location for the button
+        let userLatLng = null;
 
-        // Locate student
         map.locate({setView: false, watch: true, enableHighAccuracy: true});
         
         map.on('locationfound', (e) => {
-            userLatLng = e.latlng; // Update stored location
+            userLatLng = e.latlng;
             
             if (!shuttleMarkers['student']) {
                 shuttleMarkers['student'] = L.circleMarker(e.latlng, { 
@@ -201,7 +200,6 @@
             }
         });
 
-        // Function for the "My Location" Button
         function focusOnStudent() {
             if (userLatLng) {
                 zoomToLocation(userLatLng);
@@ -239,16 +237,19 @@
             const pos = [parseFloat(data.lat), parseFloat(data.lng)];
             const jeepLabel = `JEEP #${data.jeep_number || key}`;
             
+            // Speed logic added to popupContent
             const popupContent = `
                 <div style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12px; padding: 5px;">
                     <div style="color:#38bdf8; font-weight:bold; border-bottom:1px solid #374151; margin-bottom:5px;">${jeepLabel}</div>
                     <b>Driver:</b> ${data.driver_name || 'Active'}<br>
-                    <b>Speed:</b> ${data.speed || '0'} km/h
+                    <b>Speed:</b> <span style="color:#16a34a; font-weight:bold;">${data.speed || '0'} km/h</span>
                 </div>
             `;
 
             if (shuttleMarkers[key]) {
                 shuttleMarkers[key].setLatLng(pos);
+                // Update the popup content dynamically
+                shuttleMarkers[key].setPopupContent(popupContent);
             } else {
                 const shuttleIcon = L.divIcon({
                     html: `<div class="shuttle-label">🚌 ${jeepLabel}</div>`,
@@ -301,9 +302,15 @@
                 item.className = 'driver-item';
                 item.onclick = () => zoomToShuttle(key);
                 
+                // Added Speed to the sidebar list items
                 item.innerHTML = `
-                    <div class="driver-name">${shuttle.driver_name || 'Active Driver'}</div>
-                    <div class="driver-jeep">Jeep #${shuttle.jeep_number || key}</div>
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="driver-name">${shuttle.driver_name || 'Active Driver'}</div>
+                            <div class="driver-jeep">Jeep #${shuttle.jeep_number || key}</div>
+                        </div>
+                        <div class="driver-speed">${shuttle.speed || '0'} km/h</div>
+                    </div>
                 `;
                 listContainer.appendChild(item);
             });
